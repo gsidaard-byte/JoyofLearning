@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Intentional Joy of Learning — Workshop</title>
+  <style>
+    :root{
+      --bg:#0f172a;        /* slate-900 */
+      --card:#111827;      /* gray-900 */
+      --muted:#94a3b8;     /* slate-400 */
+      --text:#e5e7eb;      /* gray-200 */
+      --accent:#38bdf8;    /* sky-400 */
+      --accent2:#a78bfa;   /* violet-400 */
+      --ring:#f59e0b;      /* amber-500 */
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+      background:radial-gradient(60rem 60rem at 100% -10%, #111827 10%, #0b1226 50%, var(--bg) 100%);
+      color:var(--text);
+      line-height:1.45;
+    }
+    header{
+      padding:1.25rem 1rem 0.5rem; max-width:1100px; margin:0 auto;
+    }
+    header h1{ margin:0 0 .25rem; font-size:clamp(1.4rem, 1.2rem + 1.2vw, 2rem); font-weight:700;}
+    header p{ margin:.25rem 0 1rem; color:var(--muted)}
+    .container{ max-width:1100px; margin:0 auto; padding:1rem; }
+    /* Grid (front page) */
+    .grid{
+      display:grid; gap:1rem;
+      grid-template-columns:repeat(3, minmax(0,1fr));
+    }
+    @media (max-width:900px){ .grid{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
+    @media (max-width:640px){ .grid{ grid-template-columns:1fr; } }
+
+    .card{
+      background:linear-gradient(180deg, rgba(167,139,250,.08), rgba(56,189,248,.08));
+      border:1px solid rgba(148,163,184,.2);
+      border-radius:18px; padding:1.25rem;
+      display:flex; align-items:center; justify-content:center;
+      aspect-ratio: 4/3; text-align:center; cursor:pointer;
+      transition:.18s transform ease, .18s border-color ease, .18s box-shadow ease;
+      position:relative; overflow:hidden;
+    }
+    .card:focus-visible{ outline:3px solid var(--ring); outline-offset:3px; }
+    .card:hover{ transform:translateY(-2px); border-color:rgba(148,163,184,.35); }
+    .card .label{
+      font-size:clamp(1.15rem, .8rem + 1.2vw, 1.6rem); font-weight:700; letter-spacing:.3px;
+      background:linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+    .card small{ display:block; color:var(--muted); margin-top:.35rem; font-weight:500 }
+
+    /* Views */
+    .view{ display:none; }
+    .view.active{ display:block; }
+
+    /* Section view */
+    .section{
+      background:#0b1221; border:1px solid rgba(148,163,184,.18);
+      border-radius:18px; padding:1.2rem; margin-top:1rem;
+    }
+    .section h2{ margin:.25rem 0 .75rem; font-size:clamp(1.35rem, 1rem + 1vw, 1.8rem) }
+    .section .kicker{ color:var(--muted); margin-top:-.25rem; margin-bottom:.75rem }
+    .chip{
+      display:inline-block; padding:.25rem .55rem; border:1px solid rgba(148,163,184,.25);
+      border-radius:999px; font-size:.8rem; color:var(--muted); margin:.15rem .25rem .15rem 0;
+    }
+    .btn{
+      appearance:none; border:1px solid rgba(148,163,184,.35); background:#0b1221; color:var(--text);
+      padding:.55rem .8rem; border-radius:12px; cursor:pointer; font-weight:600;
+      transition:.15s transform ease, .15s border-color ease; text-decoration:none; display:inline-flex; gap:.5rem; align-items:center;
+    }
+    .btn:hover{ transform:translateY(-1px); border-color:rgba(148,163,184,.6) }
+    .btn.primary{ background:linear-gradient(90deg, rgba(56,189,248,.18), rgba(167,139,250,.18)) }
+    .toolbar{ display:flex; flex-wrap:wrap; gap:.5rem; margin:.25rem 0 .75rem }
+    .muted{ color:var(--muted) }
+
+    /* Activity placeholders */
+    .activities{ display:grid; gap:1rem; grid-template-columns:1fr; margin-top:.5rem }
+    .activity{
+      border:1px dashed rgba(148,163,184,.4); border-radius:14px; padding:1rem; background:rgba(2,6,23,.35);
+    }
+    .activity h3{ margin:.1rem 0 .35rem; font-size:1.05rem }
+    .activity .meta{ color:var(--muted); font-size:.9rem; margin-bottom:.35rem }
+    details{ background:rgba(148,163,184,.08); border:1px solid rgba(148,163,184,.18); border-radius:12px; padding:.6rem .8rem }
+    summary{ cursor:pointer; font-weight:600 }
+    .code{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:.92rem; background:#0b1226; border:1px solid rgba(148,163,184,.25); border-radius:8px; padding:.6rem; overflow:auto }
+
+    /* Notes panel */
+    .notes{
+      margin-top:.75rem; display:grid; gap:.6rem;
+    }
+    .notes label{ font-weight:600 }
+    textarea{
+      width:100%; min-height:110px; resize:vertical; padding:.65rem .75rem;
+      border-radius:10px; border:1px solid rgba(148,163,184,.25); background:#0b1226; color:var(--text)
+    }
+    input[type="text"], input[type="date"]{
+      width:100%; padding:.55rem .6rem; border-radius:10px; border:1px solid rgba(148,163,184,.25); background:#0b1226; color:var(--text)
+    }
+    .row{ display:grid; gap:.6rem; grid-template-columns:1fr 1fr }
+    @media (max-width:640px){ .row{ grid-template-columns:1fr } }
+
+    /* Print: print only the active view content */
+    @media print{
+      header, #home { display:none !important; }
+      .view{ display:block !important; }
+      .btn, .toolbar{ display:none !important; }
+      body{ background:#fff; color:#000 }
+      .section{ border:0; background:#fff }
+      .activity, details{ border-color:#999 }
+    }
+      
+      
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Intentional Joy of Learning — Workshop Hub</h1>
+    <p class="muted">Click a box to explore activities. Your notes auto-save in the browser.</p>
+    
+    
+  </header>
+
+  <main class="container">
+    <!-- HOME (2x3 grid) -->
+    <section id="home" class="view active" aria-label="Home">
+      <div class="grid" role="list">
+        <button class="card" data-target="passion" aria-label="Open Passion"><div>
+          <div class="label">Passion</div><small>Model it. Make it contagious.</small>
+        </div></button>
+        <button class="card" data-target="autonomy" aria-label="Open Autonomy"><div>
+          <div class="label">Autonomy</div><small>Choice with constraints.</small>
+        </div></button>
+        <button class="card" data-target="writing" aria-label="Open Writing"><div>
+          <div class="label">Writing</div><small>Write to understand.</small>
+        </div></button>
+        <button class="card" data-target="reflection" aria-label="Open Reflection"><div>
+          <div class="label">Reflection</div><small>Turn experience into learning.</small>
+        </div></button>
+        <button class="card" data-target="context" aria-label="Open Context"><div>
+          <div class="label">Context</div><small>Why it matters—now.</small>
+        </div></button>
+        <button class="card" data-target="creative" aria-label="Open Creative Control"><div>
+          <div class="label">Creative Control</div><small>Multiple ways to show knowing.</small>
+        </div></button>
+      </div>
+    </section>
+
+    <!-- TEMPLATE for a section -->
+    <!-- Each section has: title, quick chips, toolbar with Back/Copy link, placeholders for activities, and a notes panel that auto-saves. -->
+
+    <!-- PASSION -->
+    <section id="passion" class="view" aria-labelledby="passion-title">
+      <div class="toolbar">
+        <a class="btn" href="#" data-back>&larr; Back</a>
+        <a class="btn primary" href="#passion" data-copylink>Copy share link</a>
+        <button class="btn" data-print="passion">Save as PDF</button>
+      </div>
+      <div class="section">
+        <h2 id="passion-title">Passion</h2>
+        <p class="kicker">Model authentic excitement. Connect the concept to your story or practice.</p>
+        <div>
+          <span class="chip">Storytelling</span>
+          <span class="chip">Demonstrations</span>
+          <span class="chip">Personal relevance</span>
+        </div>
+
+        <div class="activities" id="passion-activities">
+          <div class="activity">
+            <h3>Passion → Course Bridge (Sprint)</h3>
+            <div class="meta">Time: 8–12 min · Mode: individual → pair share</div>
+            <details open>
+              <summary>Steps</summary>
+              <ol>
+                <li><strong>List three things you’re passionate about.</strong> (Anything—research, music, running, making…)</li>
+                <li><strong>List three courses you teach.</strong></li>
+                <li><strong>Connect the dots:</strong> For each course, write one sentence on how you already bring a passion into the classroom.</li>
+                <li><strong>Sprinkle plan (choose 3 micro‑injections):</strong> a 60‑sec story, an image/prop, a 30‑sec video, a live mini‑demo, or a personal anecdote that reveals why the concept matters to you.</li>
+              </ol>
+            </details>
+            <div class="notes">
+              <h4>Your responses</h4>
+              <label for="passion-q1">Three things I'm passionate about</label>
+              <textarea id="passion-q1" data-notes="passion.q1" placeholder="e.g., research area, music, mentoring…"></textarea>
+              <label for="passion-q2">Three courses I teach</label>
+              <textarea id="passion-q2" data-notes="passion.q2" placeholder="e.g., Intro to Flight, Aerodynamics, Design"></textarea>
+              <label for="passion-q3">Connect the dots (1 sentence per course)</label>
+              <textarea id="passion-q3" data-notes="passion.q3" placeholder="How I already bring passion into each course"></textarea>
+              <label for="passion-q4">Sprinkle plan (pick ~3 micro‑injections)</label>
+              <textarea id="passion-q4" data-notes="passion.q4" placeholder="60‑sec story, prop/image, 30‑sec video, live mini‑demo, personal anecdote…"></textarea>
+            </div>
+            <details>
+              <summary>AI helper (optional)</summary>
+              <pre class="code">"Act like a professional instructional coach and presentation strategist who specializes in helping educators and students communicate passion effectively and authentically in short timeframes. Your task is to help a person integrate their genuine passion for a specific topic into a short, 5-minute classroom segment that aligns with the content of a course they are currently teaching or studying.
+
+Objective: Given the user’s passion for [insert passion X] and their current course focus [insert course Y], suggest two concrete, low-preparation ways they can authentically incorporate that passion into a five-minute segment within the upcoming week. Each suggestion should:
+
+1. Be clearly tied to the course content or objectives of course [Y].
+2. Feel authentic and true to the speaker’s enthusiasm and identity — avoid anything gimmicky or overly performative.
+3. Require minimal preparation time and no special materials or technology.
+4. Provide a short explanation of why each suggestion is effective for revealing genuine passion and engaging students.
+
+Format your response as two clearly labeled suggestions with brief descriptions. Focus on ideas that feel organic and would work naturally in a real classroom environment.
+"</pre>
+            </details>
+          </div>
+        </div>
+
+        <div class="notes">
+          <h3>Plan it now (your course)</h3>
+          <div class="row">
+            <div>
+              <label for="passion-assign">Assignment I’ll retrofit</label>
+              <input id="passion-assign" type="text" data-notes="passion.assign" placeholder="e.g., Lab 2: Pump curves" />
+            </div>
+            <div>
+              <label for="passion-date">First run date</label>
+              <input id="passion-date" type="date" data-notes="passion.date" />
+            </div>
+          </div>
+          <label for="passion-plan">My plan / tweaks</label>
+          <textarea id="passion-plan" data-notes="passion.plan" placeholder="Notes, constraints, timing, materials…"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- AUTONOMY -->
+    <section id="autonomy" class="view" aria-labelledby="autonomy-title">
+      <div class="toolbar">
+        <a class="btn" href="#" data-back>&larr; Back</a>
+        <a class="btn primary" href="#autonomy" data-copylink>Copy share link</a>
+        <button class="btn" data-print="autonomy">Save as PDF</button>
+      </div>
+      <div class="section">
+        <h2 id="autonomy-title">Autonomy</h2>
+        <p class="kicker">Offer meaningful choice with clear guardrails tied to the core concept.</p>
+        <div><span class="chip">Choice</span><span class="chip">Constraints</span><span class="chip">Ownership</span></div>
+
+        <div class="activities" id="autonomy-activities">
+          <div class="activity">
+            <h3>Autonomy Retrofit (Choice with Guardrails)</h3>
+            <div class="meta">Time: 10–15 min · Mode: individual</div>
+            <details open>
+              <summary>Reflect &amp; decide</summary>
+              <ul>
+                <li><strong>Do students currently choose what they are solving?</strong></li>
+                <li><strong>How could you add autonomy in this class?</strong></li>
+                <li><strong>What level of autonomy are you comfortable with?</strong> (Pick one: <em>light</em>, <em>moderate</em>, <em>high</em>.)</li>
+              </ul>
+            </details>
+            <!-- Participant responses (autosave) -->
+            <div class="notes">
+              <h4>Your responses</h4>
+              <label for="autonomy-q1">What choice do students currently have in solving assignments</label>
+              <textarea id="autonomy-q1" data-notes="autonomy.q1" placeholder="e.g., research area, music, mentoring…"></textarea>
+              <label for="autonomy-q2">How could you add autonomy in this class?</label>
+              <textarea id="autonomy-q2" data-notes="autonomy.q2" placeholder="e.g., Intro to Flight, Aerodynamics, Aircraft Design"></textarea>
+              <label for="autonomy-q3">What level of autonomy are you comfortable with?</label>
+              <textarea id="autonomy-q3" data-notes="autonomy.q3" placeholder="How I already bring passion into each course"></textarea>
+              </div>
+        
+            <details>
+              <summary>AI helper (optional)</summary>
+              <pre class="code">"Act like an experienced instructional designer who specializes in project-based and student-centered learning in K-12 education. Your task is to help a teacher design student choice points that align with a specific learning objective or concept. The goal is to encourage autonomy and creativity while maintaining clear boundaries around resources and safety.
+
+Objective: Propose three distinct student choice opportunities related to the concept of [insert concept here] that are low-overhead to implement. Each choice point should:
+
+1. Offer meaningful student autonomy while staying aligned with the intended learning outcomes.
+2. Be practical for classroom implementation (i.e., minimal cost, accessible materials, manageable time requirements).
+3. Include explicit guardrails that address budget, materials, and safety considerations.
+4. Be written in the form of clear bullet points, each describing:
+   - What the student chooses
+   - How the choice enhances learning
+   - Specific guardrails (e.g., “Budget must be under $5,” “Use only recyclable or classroom-safe materials,” “No electricity or heat sources permitted,” etc.)
+
+Ensure your answer is practical for real classroom environments, with clear, concise, and creative examples. Avoid vague or overly general suggestions.
+"</pre>
+            </details>
+          </div>
+        </div>
+
+        <div class="notes">
+          <h3>Plan it now (your course)</h3>
+          <label for="autonomy-plan">My plan / choices to offer</label>
+          <textarea id="autonomy-plan" data-notes="autonomy.plan"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- WRITING -->
+    <section id="writing" class="view" aria-labelledby="writing-title">
+      <div class="toolbar">
+        <a class="btn" href="#" data-back>&larr; Back</a>
+        <a class="btn primary" href="#writing" data-copylink>Copy share link</a>
+        <button class="btn" data-print="writing">Save as PDF</button>
+      </div>
+      <div class="section">
+        <h2 id="writing-title">Writing</h2>
+        <p class="kicker">Use writing as a tool for clarity, not just as an assessment.</p>
+        <div><span class="chip">ELI12</span><span class="chip">Claim–Evidence–Reasoning</span><span class="chip">Diagrams & captions</span></div>
+
+        <div class="activities" id="writing-activities">
+          <div class="activity">
+            <h3>Writing‑to‑Learn Audit (Keep the WHY)</h3>
+            <div class="meta">Time: 10–15 min · Mode: individual → pair consult</div>
+            <details open>
+              <summary>Questions</summary>
+              <ol>
+                <li><strong>In your assignments, do you have a question where students are plugging numbers into equations? Or do you have a question where they are deriving equations?</strong></li>
+                <li><strong>Can you convert the question into a writing‑to‑learn approach</strong> where students think about the WHY behind the question, perform sanity checks, and provide narrative explanations?</li>
+                <li><strong>What obstacles do you see in integrating these?</strong> (Grading, time, TA training?)</li>
+              </ol>
+            </details>
+            <div class="notes">
+              <h4>Your responses</h4>
+              <label for="writing-wq1">Identify the current question</label>
+              <textarea id="writing-wq1" data-notes="writing.wq1" placeholder="Paste the prompt; mark it as plug‑and‑chug or derivation."></textarea>
+              <label for="writing-wq2">Converted writing‑to‑learn version</label>
+              <textarea id="writing-wq2" data-notes="writing.wq2" placeholder="Add WHY line + sanity checks + 120–150 word explanation requirement."></textarea>
+              <label for="writing-wq3">Obstacles & how you’ll handle them</label>
+              <textarea id="writing-wq3" data-notes="writing.wq3" placeholder="e.g., use a 3‑line rubric; grade for completion the first time."></textarea>
+            </div>
+            <details>
+              <summary>AI helper (optional)</summary>
+              <pre class="code">"Act like an expert curriculum designer and learning scientist who specializes in writing-to-learn strategies across disciplines. Your task is to transform a user-submitted problem into a writing-to-learn task — an activity that encourages students to articulate their thinking, deepen understanding, and reflect on content through short written responses.
+
+Input: A content-based problem provided by the user: [paste original problem here].
+
+Objective: Convert the original problem into a writing-to-learn task by generating the following components:
+
+1. A 1-line rationale ("WHY") that explains how writing about this topic will help the student understand the underlying concept more deeply.
+2. Three "sanity check" questions students can use to review their thinking or written response for clarity, correctness, or depth (e.g., “Did I use a specific example?”, “Have I explained my reasoning clearly?”, etc.).
+3. A writing prompt that asks students to respond in 120–150 words. This prompt should:
+   - Encourage reasoning, reflection, or explanation (not recall or regurgitation).
+   - Connect explicitly to the concept or problem.
+   - Be written in student-friendly language with a clear writing goal.
+
+Ensure your answer is clear, specific, and ready to be used in a real classroom setting without further editing.
+"</pre>
+            </details>
+          </div>
+
+
+        <div class="notes">
+          <h3>Plan it now (your course)</h3>
+          <label for="writing-plan">Where writing fits / rubric tweak</label>
+          <textarea id="writing-plan" data-notes="writing.plan"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- REFLECTION -->
+    <section id="reflection" class="view" aria-labelledby="reflection-title">
+      <div class="toolbar">
+        <a class="btn" href="#" data-back>&larr; Back</a>
+        <a class="btn primary" href="#reflection" data-copylink>Copy share link</a>
+        <button class="btn" data-print="reflection">Save as PDF</button>
+      </div>
+      <div class="section">
+        <h2 id="reflection-title">Reflection</h2>
+        <p class="kicker">Make “what changed in my thinking?” a graded, short routine.</p>
+        <div><span class="chip">Dewey</span><span class="chip">Assumption audit</span><span class="chip">Post-mortem</span></div>
+
+        <div class="activities" id="reflection-activities">
+          <div class="activity">
+            <h3>Reflection Planner</h3>
+            <div class="meta">Time: 8–12 min · Mode: individual</div>
+           <details open>
+              <summary>Questions</summary>
+              <ol>
+                <li><strong>How often do you have students provide reflection in courses you teach?</strong></li>
+                <li><strong>What are the ways by which you can collect reflections from students?</strong></li>
+                <li><strong>What do you want your students to reflect on?</strong></li>
+              </ol>
+            </details>
+            <div class="notes">
+              <h4>Your responses</h4>
+              <label for="reflection-rq1">Cadence</label>
+              <textarea id="reflection-rq1" data-notes="reflection.rq1" placeholder="Per‑assignment, weekly, at milestones…"></textarea>
+              <label for="reflection-rq2">Collection method(s)</label>
+              <textarea id="reflection-rq2" data-notes="reflection.rq2" placeholder="LMS form, index card, 60‑sec audio/video, margins…"></textarea>
+              <label for="reflection-rq3">Focus of reflection</label>
+              <textarea id="reflection-rq3" data-notes="reflection.rq3" placeholder="Assumptions updated, misconception caught, next‑step plan…"></textarea>
+            </div>
+            <details>
+              <summary>AI helper (optional)</summary>
+              <pre class="code">"Act like a professional assessment designer and reflective writing expert who specializes in designing concise, high-impact reflection prompts for active learning and formative assessment. Your task is to create a ready-to-paste reflection addendum for a specific problem, designed to deepen metacognition without adding grading or time burden.
+
+Context:
+- Course: [insert course]
+- Level: [insert level]
+- Time allotted for reflection: [insert 1–2 min]
+- Points allocated: [insert 2–5%]
+- Problem: 
+```[paste problem here]```
+
+Return your response in Markdown format. Include the following structured elements:
+
+1. **Two custom reflection prompts** (≤30 words each) tailored specifically to the pasted problem. One prompt should surface students’ assumptions or mental models; the second should encourage noticing any change in their thinking after solving.
+   
+2. **A 0/1/2 rubric** that rewards:
+   - Clarity and specificity in describing one's thought process
+   - Relevance and linkage to how the problem was actually solved
+   Format should be simple, LMS-friendly, and easily scorable.
+
+3. **One exemplar student response** (20–30 seconds to read aloud) that meets the rubric’s 2-point level, demonstrating both depth and brevity.
+
+4. **A 3-item checklist** for LMS integration, focusing on:
+   - Submission format
+   - Timing (when to complete)
+   - What to do if unsure or stuck during reflection
+
+Ensure your output is tight, usable without edits, and educationally sound. Avoid generic suggestions and tie all content closely to the specific problem.
+"</pre>
+            </details>
+          </div>
+
+          <!-- Keep the assumption ledger as a concrete pattern -->
+          <div class="activity">
+            <h3>Assumption Ledger (Optional)</h3>
+            <div class="meta">You can ask your students to do the following</div>
+            <details>
+              <summary>Steps</summary>
+              <pre class="code">Before solving the assignment, ask the students to list 3–5 assumptions and one‑phrase justification for each.
+After they solve the assignment, for each assumption they listed, mark confirmed/questionable/broken and note the impact on the answer</pre>
+            </details>
+            <details>
+              <summary>AI helper (optional)</summary>
+              <pre class="code">"Act like an expert in critical thinking instruction and scientific reasoning, with a focus on helping students uncover and interrogate hidden assumptions in problem-solving. Your task is to create a paste-ready “Assumption Ledger” for a specific academic problem to prompt metacognitive analysis and improve solution robustness.
+
+Input:
+- Problem: 
+```[paste problem here]```
+
+Deliverables:
+
+1. **A simple markdown table** listing five common or likely assumptions that students might make when solving this specific problem. For each assumption:
+   - Include a brief description.
+   - Note its **typical validity range** (e.g., “Usually true in ideal gas scenarios,” or “Holds only when friction is negligible”).
+   - Flag any **high-risk** assumptions (e.g., those that, if incorrect, would drastically alter the outcome or approach).
+
+2. For the riskiest assumption, write **a one-line validation test or measurement** the student could perform to check its appropriateness in context.
+
+3. Provide **two concise instructional lines** (≤25 words each) for students to see beneath the problem, prompting them to review the ledger and reflect. These should encourage intentional awareness and critical assessment of their assumptions.
+
+Keep language accessible to students but precise. Ensure your ledger is well aligned with the content of the problem.
+
+Take a deep breath and work on this problem step-by-step.
+"</pre>
+            </details>
+          </div>
+        </div>
+
+        <div class="notes">
+          <h3>Plan it now (your course)</h3>
+          <label for="reflection-plan">Reflection prompts / grading</label>
+          <textarea id="reflection-plan" data-notes="reflection.plan"></textarea>
+        </div>
+      </div>
+    </section>
+        
+    <!-- CONTEXT -->
+    <section id="context" class="view" aria-labelledby="context-title">
+      <div class="toolbar">
+        <a class="btn" href="#" data-back>&larr; Back</a>
+        <a class="btn primary" href="#context" data-copylink>Copy share link</a>
+        <button class="btn" data-print="context">Save as PDF</button>
+      </div>
+      <div class="section">
+        <h2 id="context-title">Context</h2>
+        
+        <p class="kicker">Tie concepts to real decisions, risks, and users.</p>
+        <div><span class="chip">Stakeholders</span><span class="chip">Constraints</span><span class="chip">Risk if wrong</span></div>
+
+        <div class="activities" id="context-activities">
+          <div class="activity">
+            <h3>Context Audit for an Existing Question</h3>
+            <div class="meta">Time: 10–15 min · Mode: trios → individual</div>
+            <details open>
+              <summary>Questions</summary>
+              <ol>
+                <li><strong>Think of a question you give in your assignment. Include it below.</strong></li>
+                <li><strong>Does it have context?</strong> If not, how can you let students see why this question matters?</li>
+                <li><strong>Why should students solve this problem?</strong> (It can’t be “because I said so.”)</li>
+              </ol>
+            </details>
+            <div class="notes">
+              <h4>Your responses</h4>
+              <label for="context-cq1">Original question</label>
+              <textarea id="context-cq1" data-notes="context.cq1"></textarea>
+              <label for="context-cq2">Context upgrade</label>
+              <textarea id="context-cq2" data-notes="context.cq2" placeholder="Stakeholder, decision, data, constraints…"></textarea>
+              <label for="context-cq3">Non‑negotiable rationale</label>
+              <textarea id="context-cq3" data-notes="context.cq3" placeholder="Real‑world value; what failure it prevents; who benefits…"></textarea>
+            </div>
+            <details>
+              <summary>AI helper (optional)</summary>
+              <pre class="code">"Act like a professional learning designer and real-world scenario writer who specializes in contextualizing academic problems to boost relevance, transfer, and student engagement. Your task is to create a paste-ready CONTEXT INSERT that meaningfully anchors a given problem in a realistic, specific scenario relevant to the target audience.
+
+Inputs:
+- Course: [insert course name]
+- Audience: [insert year or level of student]
+- Problem:
+```[paste problem here]```
+
+Return the following in clean Markdown format:
+
+1. **Scenario** (2–3 sentences): Describe a specific, real-world situation involving a plausible stakeholder. Include realistic data or numerical values relevant to the problem. Ensure it’s both contextually appropriate for the course and plausible for the audience level.
+
+2. **Decision**: Describe the immediate or near-term decision the stakeholder must make — a decision that the problem’s result will directly inform.
+
+3. **Risk**: State one concrete risk or consequence that could result from misunderstanding or misapplying the outcome.
+
+4. **Why now**: Provide a compelling one-line note explaining why this situation or problem is timely or meaningful for students today.
+
+Ensure all content is tightly tailored to the given problem and helps students clearly see the application and stakes of their solution."
+</pre>
+            </details>
+          </div>
+
+
+        <div class="notes">
+          <h3>Plan it now (your course)</h3>
+          <label for="context-plan">Which stakeholder(s) will you use?</label>
+          <textarea id="context-plan" data-notes="context.plan"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- CREATIVE CONTROL -->
+    <section id="creative" class="view" aria-labelledby="creative-title">
+      <div class="toolbar">
+        <a class="btn" href="#" data-back>&larr; Back</a>
+        <a class="btn primary" href="#creative" data-copylink>Copy share link</a>
+        <button class="btn" data-print="creative">Save as PDF</button>
+      </div>
+      <div class="section">
+        <h2 id="creative-title">Creative Control</h2>
+        
+        <p class="kicker">Let students choose the medium; you assess accuracy and clarity.</p>
+        <div><span class="chip">Metaphor</span><span class="chip">Comic</span><span class="chip">Audio script</span><span class="chip">Game mechanic</span></div>
+
+        <div class="activities" id="creative-activities">
+          <div class="activity">
+            <h3>Creative Control Audit</h3>
+            <div class="meta">Time: 12–15 min · Mode: individual</div>
+            <details open>
+              <summary>Questions</summary>
+              <ol>
+                <li><strong>Out of all your assignments, where can students be “let loose”?</strong></li>
+                <li><strong>Think of a problem/assignment/project you’re delivering right now</strong> where you can integrate creative control.</li>
+                <li><strong>How can you prompt students to create something you haven’t specifically asked for</strong> so they go above and beyond?</li>
+              </ol>
+            </details>
+            <div class="notes">
+              <h4>Your responses</h4>
+              <label for="creative-cq1">Where students can be let loose</label>
+              <textarea id="creative-cq1" data-notes="creative.cq1"></textarea>
+              <label for="creative-cq2">Assignment chosen + creative control plan</label>
+              <textarea id="creative-cq2" data-notes="creative.cq2"></textarea>
+              <label for="creative-cq3">Beyond‑brief prompt idea</label>
+              <textarea id="creative-cq3" data-notes="creative.cq3"></textarea>
+            </div>
+            <details>
+              <summary>AI helper (optional)</summary>
+              <pre class="code">"Act like an expert in instructional scaffolding and creative assessment design, with a focus on integrating student voice and agency into technical problem-solving tasks. Your job is to write a paste-ready CREATIVE CONTROL CLAUSE that gives students structured flexibility in how they present or communicate their solution to a specific academic problem.
+
+Inputs:
+- Course: [insert course name]
+- Learning Goal: [insert specific learning goal]
+- Problem:
+```[paste problem here]```
+- Extra Time Allowed: [insert amount, e.g., “up to 20 minutes”]
+
+Return the following in clean Markdown format:
+
+1. **Creative Control Clause (1 sentence)**: Invite students to choose their preferred media format (e.g., diagram, narrated slide, written paragraph, annotated photo) to explain their solution, while adhering to three strict guardrails:
+   - **Accuracy**: The core math/reasoning must be correct and complete.
+   - **Clarity**: The communication must be easy to follow for peers.
+   - **Transparency**: All key assumptions must be named or labeled.
+
+2. **Beyond-Brief Add-On (1 sentence)**: Suggest one optional extension idea that prompts deeper thinking or transfer — e.g., "Suggest one scenario where your solution would break down and explain why" — without adding grading burden.
+
+3. **Rubric (3 lines)**: Present a simple scoring guide with weights:
+   - Accuracy (50 points): Correct logic, steps, and final answer.
+   - Clarity (30 points): Format is well-structured and easy to understand.
+   - Insight (20 points): Includes thoughtful nuance, edge case, or reflection.
+
+Ensure all elements are tightly aligned with the problem and appropriate for the course and audience level. Keep tone professional but student-friendly.
+"</pre>
+            </details>
+          </div>
+
+        <div class="notes">
+          <h3>Plan it now (your course)</h3>
+          <label for="creative-plan">Allowed media + guardrails</label>
+          <textarea id="creative-plan" data-notes="creative.plan"></textarea>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Simple router: show section by id, support #hash links, back button, and deep links.
+    const views = [...document.querySelectorAll('.view')];
+    const home = document.getElementById('home');
+
+    function show(id){
+      views.forEach(v => v.classList.remove('active'));
+      const el = document.getElementById(id);
+      (el || home).classList.add('active');
+      if(el && id !== 'home'){ history.replaceState(null, '', '#' + id); }
+      if(!el){ history.replaceState(null, '', '#'); }
+      const h = el?.querySelector('h2'); if(h){ setTimeout(()=>h.focus?.(), 50); }
+    }
+
+    // Card clicks
+    document.querySelectorAll('.card').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-target');
+        show(id);
+      });
+    });
+
+    // Back links
+    document.querySelectorAll('[data-back]').forEach(b=>{
+      b.addEventListener('click', (e)=>{
+        e.preventDefault();
+        show('home');
+      });
+    });
+
+    // Copy share link
+    document.querySelectorAll('[data-copylink]').forEach(a=>{
+      a.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const href = a.getAttribute('href') || location.href;
+        const url = new URL(location.href);
+        url.hash = href.replace('#','');
+        navigator.clipboard?.writeText(url.toString())
+          .then(()=>{ a.textContent='Link copied ✓'; setTimeout(()=>a.textContent='Copy share link',1200); })
+          .catch(()=>{ /* ignore */ });
+      });
+    });
+
+    // Hash routing
+    function route(){
+      const id = (location.hash || '').replace('#','').trim();
+      if(id){ show(id); } else { show('home'); }
+    }
+    window.addEventListener('hashchange', route);
+    route();
+
+    // Notes autosave to localStorage
+    const NS = 'joyworkshop.v1.';
+    function loadNotes(){
+      document.querySelectorAll('[data-notes]').forEach(el=>{
+        const key = NS + el.dataset.notes;
+        const v = localStorage.getItem(key);
+        if(v !== null){ el.value = v; }
+        el.addEventListener('input', ()=> localStorage.setItem(key, el.value));
+      });
+    }
+    loadNotes();
+
+  // === Save current tab as PDF ===
+  // Prints only the currently active section (or the section that contains the clicked button)
+  function printView(id){
+    // Inject a temporary print style that hides everything except the chosen view
+    const style = document.createElement('style');
+    style.id = 'print-style';
+    style.media = 'print';
+    style.textContent = `@media print { header, #home { display: none !important; } .view { display: none !important; } #${id} { display: block !important; } }`;
+    document.head.appendChild(style);
+
+    const cleanup = () => {
+      try { document.head.removeChild(style); } catch(_) {}
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+
+    // Ensure the right section is visible before printing
+    show(id);
+    setTimeout(() => window.print(), 50);
+  }
+
+  // Activate the Save as PDF buttons. We infer the correct section from the button's nearest .view
+  document.querySelectorAll('[data-print]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const view = btn.closest('.view');
+      const id = view?.id || (location.hash || '#home').replace('#','') || 'home';
+      printView(id);
+    });
+  });
+</script>
+</body>
+</html>
