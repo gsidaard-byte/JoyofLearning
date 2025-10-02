@@ -89,6 +89,18 @@
     summary{ cursor:pointer; font-weight:600 }
     .code{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:.92rem; background:#0b1226; border:1px solid rgba(148,163,184,.25); border-radius:8px; padding:.6rem; overflow:auto }
 
+    /* Pendulum simulation */
+    .pendulum-layout{ display:grid; gap:1.25rem; grid-template-columns:minmax(0,2.2fr) minmax(0,1fr); align-items:start; }
+    @media (max-width:900px){ .pendulum-layout{ grid-template-columns:1fr; } }
+    .pendulum-sim{ background:rgba(15,23,42,.65); border:1px solid rgba(148,163,184,.3); border-radius:16px; padding:1rem; }
+    .pendulum-sim canvas{ width:100%; max-width:520px; display:block; margin:0 auto; background:#020617; border-radius:12px; border:1px solid rgba(148,163,184,.2); }
+    .pendulum-sim p{ margin:.5rem 0 0; font-size:.85rem; color:var(--muted); text-align:center; }
+    .pendulum-controls{ display:grid; gap:.75rem; background:rgba(15,23,42,.45); border:1px solid rgba(148,163,184,.25); border-radius:16px; padding:1rem; }
+    .pendulum-controls label{ display:flex; justify-content:space-between; align-items:center; font-weight:600; gap:.5rem; }
+    .pendulum-controls input[type="range"]{ width:100%; accent-color:var(--accent); }
+    .pendulum-controls .value{ color:var(--accent); font-variant-numeric:tabular-nums; }
+    .pendulum-controls button{ justify-self:start; }
+
     /* Notes panel */
     .notes{
       margin-top:.75rem; display:grid; gap:.6rem;
@@ -146,6 +158,9 @@
         </div></button>
         <button class="card" data-target="creative" aria-label="Open Creative Control"><div>
           <div class="label">Creative Control</div><small>Multiple ways to show knowing.</small>
+        </div></button>
+        <button class="card" data-target="pendulum" aria-label="Open Pendulum Lab"><div>
+          <div class="label">Physics Lab</div><small>Simulate a real pendulum.</small>
         </div></button>
       </div>
     </section>
@@ -603,6 +618,52 @@ Ensure all elements are tightly aligned with the problem and appropriate for the
       </div>
     </section>
 
+    <!-- PENDULUM LAB -->
+    <section id="pendulum" class="view" aria-labelledby="pendulum-title">
+      <div class="toolbar">
+        <a class="btn" href="#" data-back>&larr; Back</a>
+        <a class="btn primary" href="#pendulum" data-copylink>Copy share link</a>
+        <button class="btn" data-print="pendulum">Save as PDF</button>
+      </div>
+      <div class="section">
+        <h2 id="pendulum-title">Physics Lab: Pendulum Motion</h2>
+        <p class="kicker">Adjust the parameters of a simple pendulum and watch how the real equations of motion respond.</p>
+        <div class="pendulum-layout">
+          <div class="pendulum-sim">
+            <canvas id="pendulum-canvas" width="640" height="420" role="img" aria-label="Animated pendulum simulation"></canvas>
+            <p>Equation of motion: <code>θ̈ = -(g / L) · sin(θ) - b · θ̇</code></p>
+          </div>
+          <form class="pendulum-controls" aria-label="Pendulum controls">
+            <div>
+              <label for="pendulum-length">Rod length <span class="value" data-value="length">1.00 m</span></label>
+              <input id="pendulum-length" type="range" min="0.5" max="2.5" step="0.05" value="1.0" aria-describedby="pendulum-length-hint" />
+              <small id="pendulum-length-hint" class="muted">Longer pendulums swing more slowly because the restoring torque is weaker.</small>
+            </div>
+            <div>
+              <label for="pendulum-gravity">Gravity <span class="value" data-value="gravity">9.81 m/s²</span></label>
+              <input id="pendulum-gravity" type="range" min="1" max="20" step="0.1" value="9.81" aria-describedby="pendulum-gravity-hint" />
+              <small id="pendulum-gravity-hint" class="muted">Try Moon (~1.62), Earth (9.81), or Jupiter (~24.8, off-scale) scenarios.</small>
+            </div>
+            <div>
+              <label for="pendulum-damping">Damping <span class="value" data-value="damping">0.02 s⁻¹</span></label>
+              <input id="pendulum-damping" type="range" min="0" max="0.1" step="0.005" value="0.02" aria-describedby="pendulum-damping-hint" />
+              <small id="pendulum-damping-hint" class="muted">Energy loss from air resistance or friction. Zero means no damping.</small>
+            </div>
+            <div>
+              <label for="pendulum-angle">Release angle <span class="value" data-value="angle">30°</span></label>
+              <input id="pendulum-angle" type="range" min="5" max="89" step="1" value="30" aria-describedby="pendulum-angle-hint" />
+              <small id="pendulum-angle-hint" class="muted">Large angles reveal non-linear motion beyond the small-angle approximation.</small>
+            </div>
+            <button type="button" class="btn primary" id="pendulum-reset">Release pendulum</button>
+          </form>
+        </div>
+        <details style="margin-top:1rem;">
+          <summary>What makes this "real" physics?</summary>
+          <p class="muted">The simulation integrates the exact non-linear pendulum equation using a fourth-order Runge–Kutta method. This preserves the real dynamics even for large angles, unlike the simple harmonic approximation θ(t) ≈ θ₀ cos(√(g/L) · t).</p>
+        </details>
+      </div>
+    </section>
+
   </main>
 
   <script>
@@ -698,6 +759,189 @@ Ensure all elements are tightly aligned with the problem and appropriate for the
       printView(id);
     });
   });
+
+  // Pendulum simulation
+  (function(){
+    const canvas = document.getElementById('pendulum-canvas');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const lengthInput = document.getElementById('pendulum-length');
+    const gravityInput = document.getElementById('pendulum-gravity');
+    const dampingInput = document.getElementById('pendulum-damping');
+    const angleInput = document.getElementById('pendulum-angle');
+    const resetButton = document.getElementById('pendulum-reset');
+
+    const valueSpans = {
+      length: document.querySelector('[data-value="length"]'),
+      gravity: document.querySelector('[data-value="gravity"]'),
+      damping: document.querySelector('[data-value="damping"]'),
+      angle: document.querySelector('[data-value="angle"]')
+    };
+
+    const state = {
+      theta: 0,
+      omega: 0,
+      length: parseFloat(lengthInput?.value || '1'),
+      gravity: parseFloat(gravityInput?.value || '9.81'),
+      damping: parseFloat(dampingInput?.value || '0.02')
+    };
+
+    let targetAngle = degToRad(parseFloat(angleInput?.value || '30'));
+
+    function degToRad(deg){ return (deg * Math.PI) / 180; }
+    function radToDeg(rad){ return (rad * 180) / Math.PI; }
+
+    function setLabel(key, text){
+      if(valueSpans[key]){ valueSpans[key].textContent = text; }
+    }
+
+    function updateLength(){
+      state.length = parseFloat(lengthInput.value);
+      setLabel('length', `${state.length.toFixed(2)} m`);
+    }
+
+    function updateGravity(){
+      state.gravity = parseFloat(gravityInput.value);
+      setLabel('gravity', `${state.gravity.toFixed(2)} m/s²`);
+    }
+
+    function updateDamping(){
+      state.damping = parseFloat(dampingInput.value);
+      setLabel('damping', `${state.damping.toFixed(3)} s⁻¹`);
+    }
+
+    function updateAngleLabel(){
+      const angle = parseFloat(angleInput.value);
+      targetAngle = degToRad(angle);
+      setLabel('angle', `${Math.round(angle)}°`);
+    }
+
+    function resetPendulum(){
+      state.theta = targetAngle;
+      state.omega = 0;
+    }
+
+    lengthInput?.addEventListener('input', updateLength);
+    gravityInput?.addEventListener('input', updateGravity);
+    dampingInput?.addEventListener('input', updateDamping);
+    angleInput?.addEventListener('input', updateAngleLabel);
+    resetButton?.addEventListener('click', resetPendulum);
+
+    updateLength();
+    updateGravity();
+    updateDamping();
+    updateAngleLabel();
+    resetPendulum();
+
+    const bobRadius = 18;
+    const pivot = { x: canvas.width / 2, y: 70 };
+    const maxLength = 2.5;
+
+    function acceleration(theta, omega){
+      return - (state.gravity / state.length) * Math.sin(theta) - state.damping * omega;
+    }
+
+    function integrate(dt){
+      const s1 = derivatives(state.theta, state.omega);
+      const s2 = derivatives(state.theta + 0.5 * dt * s1.thetaDot, state.omega + 0.5 * dt * s1.omegaDot);
+      const s3 = derivatives(state.theta + 0.5 * dt * s2.thetaDot, state.omega + 0.5 * dt * s2.omegaDot);
+      const s4 = derivatives(state.theta + dt * s3.thetaDot, state.omega + dt * s3.omegaDot);
+
+      state.theta += (dt / 6) * (s1.thetaDot + 2 * s2.thetaDot + 2 * s3.thetaDot + s4.thetaDot);
+      state.omega += (dt / 6) * (s1.omegaDot + 2 * s2.omegaDot + 2 * s3.omegaDot + s4.omegaDot);
+    }
+
+    function derivatives(theta, omega){
+      return {
+        thetaDot: omega,
+        omegaDot: acceleration(theta, omega)
+      };
+    }
+
+    function draw(){
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const pixelsPerMeter = (h - 140) / maxLength;
+      const lengthPx = state.length * pixelsPerMeter;
+      const bobX = pivot.x + lengthPx * Math.sin(state.theta);
+      const bobY = pivot.y + lengthPx * Math.cos(state.theta);
+
+      // arc guide
+      ctx.save();
+      ctx.strokeStyle = 'rgba(148,163,184,0.28)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 10]);
+      ctx.beginPath();
+      ctx.arc(pivot.x, pivot.y, lengthPx, Math.PI, 0);
+      ctx.stroke();
+      ctx.restore();
+
+      // rod
+      ctx.strokeStyle = 'rgba(148,163,184,0.75)';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(pivot.x, pivot.y);
+      ctx.lineTo(bobX, bobY);
+      ctx.stroke();
+
+      // pivot
+      ctx.fillStyle = 'rgba(167,139,250,0.8)';
+      ctx.beginPath();
+      ctx.arc(pivot.x, pivot.y, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // bob
+      ctx.fillStyle = 'rgba(56,189,248,0.9)';
+      ctx.beginPath();
+      ctx.arc(bobX, bobY, bobRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(15,23,42,0.85)';
+      ctx.stroke();
+
+      // metrics
+      const angularVelocity = state.omega;
+      const linearSpeed = Math.abs(state.length * angularVelocity);
+      const height = state.length * (1 - Math.cos(state.theta));
+      const energyPerMass = 0.5 * Math.pow(state.length * angularVelocity, 2) + state.gravity * height;
+      const smallAnglePeriod = 2 * Math.PI * Math.sqrt(state.length / state.gravity);
+
+      ctx.fillStyle = 'rgba(148,163,184,0.92)';
+      ctx.font = '16px/1.3 "Segoe UI", system-ui, sans-serif';
+      ctx.fillText(`Instant angle: ${radToDeg(state.theta).toFixed(1)}°`, 24, h - 70);
+      ctx.fillText(`Linear speed: ${linearSpeed.toFixed(2)} m/s`, 24, h - 45);
+      ctx.fillText(`Energy per kg: ${energyPerMass.toFixed(2)} J`, 24, h - 20);
+
+      ctx.textAlign = 'right';
+      ctx.fillText(`Small-angle period ≈ ${smallAnglePeriod.toFixed(2)} s`, w - 24, h - 45);
+      const dampingRatio = state.damping / (2 * Math.sqrt(state.gravity / state.length));
+      ctx.fillText(`Damping ratio: ${dampingRatio.toFixed(2)}`, w - 24, h - 20);
+      ctx.textAlign = 'left';
+    }
+
+    let lastTime;
+    function frame(time){
+      if(lastTime == null){
+        lastTime = time;
+      }
+      const dt = Math.min((time - lastTime) / 1000, 0.05);
+      integrate(dt);
+      draw();
+      lastTime = time;
+      requestAnimationFrame(frame);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if(document.hidden){
+        lastTime = null;
+      }
+    });
+
+    requestAnimationFrame(frame);
+  })();
 </script>
 </body>
 </html>
